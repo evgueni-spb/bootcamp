@@ -1,0 +1,61 @@
+@startuml
+
+skinparam actorBackgroundColor<< EXTERNAL >> YellowGreen
+
+skinparam usecase {
+
+	BackgroundColor<< EXTERNAL >> YellowGreen
+	BorderColor<< EXTERNAL >> YellowGreen
+}
+
+:EIS Billing: as Billing
+:EIS Commissions: as Commissions
+:EIS Claims: as Claims
+:EIS Payment transfer job: as TransferJob
+:EIS Payment confirmation job: as ConfirmJob
+actor :Payment gateway: as PG << EXTERNAL >>
+
+
+Billing -> (Create payment)
+Commissions -> (Create payment)
+Claims -> (Create payment)
+(Create payment) .> (Create staging record) :include
+(Update status of staging records) .> (Cleanup of old staging records) :include
+
+
+TransferJob --> "1" (Read staging records)
+TransferJob --> "2" (Generate payment file)
+TransferJob --> "3" (Upload payment file)
+(Retry upload) .> (Upload payment file) :extend
+TransferJob --> "4" (Update status of staging records)
+TransferJob --> "5" (Generate success/failure BAM activity)
+
+note "Retries a configurable number of times with a configurable delay" as N1
+(Retry upload) .. N1
+N1 .. (Retry reading)
+
+(Read file) << EXTERNAL >>
+(Process payments) << EXTERNAL >>
+(Upload response file) << EXTERNAL >>
+
+PG --> "1" (Read file)
+PG --> "2" (Process payments)
+PG --> "3" (Upload response file)
+
+
+(Retry reading) .> (Read response file) :extend
+(Update staging records)
+(Update payment status)
+(Back up response file)
+
+
+
+ConfirmJob --> "1" (Read response file)
+ConfirmJob --> "2" (Update staging records)
+ConfirmJob --> "3" (Update payment status)
+ConfirmJob --> "4" (Back up response file)
+
+
+
+
+@enduml
