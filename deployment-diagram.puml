@@ -5,6 +5,10 @@ HTTP - [First Component]
 [Another Component]
 }
 
+database EIS-DB {
+
+}
+
 artifact hello
 
 package "Other Groups" {
