@@ -1,25 +1,60 @@
 @startuml
 
-package "EIS App" {
-HTTP - [First Component]
+
+
+skinparam  package {
+
+	BackgroundColor<<EXTERNAL>> YellowGreen
+	BorderColor<< EXTERNAL >> YellowGreen
+
+}
+
+skinparam component {
+  BackgroundColor<<FRAMEWORK>> orange
+  BorderColor<< FRAMEWORK >> orange
+
+}
+
+
+package "EIS Batch App" {
 [EIS Billing]
 [EIS Commissions]
 [EIS Claims]
 [Payment Transfer Job]
 [Payment Confirmation Job]
-[Apache Camel]
+[Apache Camel]<<FRAMEWORK>>
+[Payment Transfer Services]
+[Payment Transfer DAO]
+[JPA-Hibernate]<<FRAMEWORK>>
 }
 
-database EIS-DB {
-
+database Data {
+[EIS DB] #Yellow
 }
 
-artifact hello
+[Payment Transfer DAO] - [JPA-Hibernate]
+[JPA-Hibernate] ---- JDBC
+JDBC -- [EIS DB]
 
-package "Other Groups" {
-FTP - [Second Component]
 
-[First Component] --> FTP
+package "Payment Gateway"<< EXTERNAL >> {
+SFTP - [File Exchange]
+[Payment Processing]
 }
+
+[File Exchange] <--> [Payment Processing]
+
+[Payment Transfer Job] --> [Apache Camel]
+
+[Payment Confirmation Job]  --> [Apache Camel]
+[Apache Camel] ----> SFTP
+[EIS Billing] <-> [Payment Transfer Services]
+[EIS Commissions] -> [EIS Billing]
+[EIS Claims]  <-> [Payment Transfer Services]
+[Payment Transfer Services] -> [Payment Transfer DAO]
+[Payment Transfer Job] -> [Payment Transfer Services]
+[Payment Confirmation Job] -> [Payment Transfer Services]
+
+
 
 @enduml
