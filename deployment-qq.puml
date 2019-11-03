@@ -1,0 +1,87 @@
+@startuml
+
+
+
+skinparam  package {
+
+	BackgroundColor<<EXTERNAL>> YellowGreen
+	BorderColor<< EXTERNAL >> YellowGreen
+	BackgroundColor<<DB>> plum
+    BorderColor<<DB>> plum
+
+}
+
+package "LB" #plum{
+ node "LB Node 1"{
+ [LB 1] #MediumPurple
+ }
+
+ node "LB Node 2"{
+  [LB 2] #MediumPurple
+  }
+
+}
+
+
+package "EIS-WEB" #gold{
+
+
+
+node "Node 1" {
+[EIS App 1]
+[DXP App 1]
+[Mobile App 1]
+}
+
+node "Node 2" {
+[EIS App 2]
+[DXP App 2]
+[Mobile App 2]
+}
+
+
+}
+
+[Client] #YellowGreen
+[Client] -> HTTP
+
+HTTP --- [LB 1]
+HTTP --- [LB 2]
+(LB 1) <..> [EIS App 1]
+(LB 1) <..> [EIS App 2]
+(LB 1) <..> [DXP App 1]
+(LB 1) <..> [DXP App 2]
+(LB 1) <..> [Mobile App 1]
+(LB 1) <..> [Mobile App 2]
+
+(LB 2) .> [EIS App 1]
+(LB 2) .> [EIS App 2]
+(LB 2) <..> [DXP App 1]
+(LB 2) <..> [DXP App 2]
+(LB 2) <..> [Mobile App 1]
+(LB 2) <..> [Mobile App 2]
+
+
+package "Rating" #PowderBlue{
+
+
+node "EIS Rating Node 1" {
+[Rating App 1] #SkyBlue
+}
+
+node "EIS Rating Node 2" {
+[Rating App 2] #SkyBlue
+}
+
+(LB 1) ----> [Rating App 1]
+(LB 2) -----> [Rating App 2]
+}
+
+
+
+note "Database nodes as well as Payment Gateway are not shown for simplicity" as N1
+
+
+
+
+@enduml

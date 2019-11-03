@@ -1,0 +1,36 @@
+@startuml
+
+
+
+
+
+HTTPS_1 - [Mobile Web App]
+HTTP_2 - [DXP App]
+HTTP_3 - [EIS App]
+HTTP_4 - [Rating App]
+JDBC - [EIS DB]
+
+
+package "Payment Provider" #plum {
+HTTPS_5 - [Gateway]
+}
+
+[Client] #YellowGreen
+[EIS DB] #yellow
+
+[Client] .> HTTPS_1
+[Mobile Web App] .> HTTP_2
+[DXP App] .> HTTP_3
+[DXP App] .-> HTTP_4
+[EIS App] .> HTTP_4
+[Rating App] ..> JDBC
+[EIS App] ..> JDBC
+[EIS App] ...> HTTPS_5
+
+
+
+
+
+
+
+@enduml
