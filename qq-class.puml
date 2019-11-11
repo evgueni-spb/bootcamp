@@ -1,0 +1,37 @@
+@startuml
+
+allowmixing
+class EISUQuoteFacade {
+  EISUPolicyDto createQuote(EISUPolicyDto quote)
+}
+class GLICHealthPolicyRestServiceImpl
+class GLICDentalPPOPolicyRestServiceImpl
+
+
+interface EISUPolicyRestService
+
+class EISUPolicyRestServiceImpl{
+}
+
+class EISUDentalPPOPolicyRestServiceImpl{
+}
+class EISUAbstractPolicyRestServiceImpl
+EISUDentalPPOPolicyRestServiceImpl --|> EISUAbstractPolicyRestServiceImpl
+EISUPolicyRestServiceImpl --|> EISUAbstractPolicyRestServiceImpl
+EISUPolicyRestServiceImpl ..|> EISUPolicyRestService
+
+class DentalPPOOpenLPolicyRulesServiceAdapter {
+
+}
+
+class OpenLServiceFactoryBean {
+
+}
+
+class DentalPPOOpenLPolicyRuleService {
+
+}
+
+artifact "Plan Configuration XLSX files"
+
+@enduml
