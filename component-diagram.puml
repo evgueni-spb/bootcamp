@@ -15,27 +15,23 @@ skinparam component {
 
 }
 
+skinparam component {
+  BackgroundColor<<EIS>> olive
+  BorderColor<<EIS>> olive
+
+}
+
 
 package "EIS Batch App" {
-[EIS Billing]
-[EIS Commissions]
-[EIS Claims]
+[Billing]<<EIS>>
+[Commissions]<<EIS>>
+[Claims]<<EIS>>
 [Payment Transfer Job]
 [Payment Confirmation Job]
+[Payment Staging Layer]
 [Apache Camel]<<FRAMEWORK>>
-[Payment Transfer Services]
-[Payment Transfer DAO]
-[JPA-Hibernate]<<FRAMEWORK>>
+[Payment Transfer Layer]
 }
-
-database Data {
-[EIS DB] #Yellow
-}
-
-[Payment Transfer DAO] - [JPA-Hibernate]
-[JPA-Hibernate] ---- JDBC
-JDBC -- [EIS DB]
-
 
 package "Payment Gateway"<< EXTERNAL >> {
 SFTP - [File Exchange]
@@ -48,12 +44,14 @@ SFTP - [File Exchange]
 
 [Payment Confirmation Job]  --> [Apache Camel]
 [Apache Camel] ----> SFTP
-[EIS Billing] <-> [Payment Transfer Services]
-[EIS Commissions] -> [EIS Billing]
-[EIS Claims]  <-> [Payment Transfer Services]
-[Payment Transfer Services] -> [Payment Transfer DAO]
-[Payment Transfer Job] -> [Payment Transfer Services]
-[Payment Confirmation Job] -> [Payment Transfer Services]
+[Billing] -> [Payment Staging Layer]
+[Commissions] -> [Billing]
+[Claims]  -> [Billing]
+[Payment Transfer Job] -> [Payment Transfer Layer]
+[Payment Confirmation Job] -> [Payment Transfer Layer]
+[Payment Transfer Job] -> [Payment Staging Layer]
+[Payment Confirmation Job] -> [Payment Staging Layer]
+[Payment Transfer Layer] -> [Billing]
 
 
 

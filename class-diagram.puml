@@ -1,0 +1,126 @@
+@startuml
+allowmixing
+
+skinparam package {
+  BackgroundColor<<LIB>> olive
+  BorderColor<<LIB>> olive
+}
+
+skinparam artifact {
+  BackgroundColor yellow
+  BorderColor brown
+}
+
+enum TransferStatus {
+pending
+sent
+processed
+}
+
+enum ProcessingStatus {
+stopped
+cleared
+declined
+}
+
+class PaymentUpdatedEvent
+class PaymentTransferEntity {
+Long batchNumber
+TransferStatus statusCd
+Date updated
+Boolean voided
+String paymentNumber
+int direction
+BigDecimal amount
+String currency
+String referenceNumber
+ProcessingStatus processingStatus
+String declineReason
+...
+}
+class CheckPaymentTransferEntity {
+String checkNumber
+String payeeName
+....
+}
+class EFTPaymentTransferEntity {
+String bankAccountType
+String transitNumber
+....
+}
+CheckPaymentTransferEntity --|> PaymentTransferEntity
+EFTPaymentTransferEntity --|> PaymentTransferEntity
+PaymentTransferEntity --|> TransferStatus
+PaymentTransferEntity --|> ProcessingStatus
+
+class EISUPaymentUpdatedEventListener {
++onApplicationEvent(PaymentUpdatedEvent)
+}
+
+EISUPaymentUpdatedEventListener o--> PaymentUpdatedEvent
+
+interface EISUPaymentStagingService
+class EISUPaymentStagingServiceImpl{
++createUpdateStagingRecord(PaymentUpdatedEvent event)
++updateStagingRecord(PaymentTransferProcessingDTO dto)
++fetchStagingRecords(Date from, Long batchNumber)
++cleanup(Date to)
+}
+
+EISUPaymentStagingServiceImpl *--> PaymentTransferProcessingDTO
+
+abstract class BaseAuditingJob
+
+class EISUPaymentTransferJob {
++JobResults doExecute(Map map, Auditor auditor)
+}
+
+EISUPaymentTransferJob --|> BaseAuditingJob
+
+interface EISUPaymentTransferService
+class EISUPaymentTransferServiceImpl{
++validateStagingRecord(PaymentTransferEntity)
++mapStagingRecord(PaymentTransferEntity)
+}
+
+package BeanIO <<LIB>> {
+abstract class BeanIOStreamFactory
+interface BeanWriter
+interface BeanReader
+
+BeanIOStreamFactory --> "creates" BeanWriter
+BeanIOStreamFactory --> "creates" BeanReader
+}
+artifact "payment transfer mapping xml file"
+artifact "payment response mapping xml file"
+
+
+EISUPaymentTransferServiceImpl *--> BeanWriter
+EISUPaymentTransferServiceImpl *--> BeanReader
+
+BeanIOStreamFactory *-> "payment transfer mapping xml file"
+BeanIOStreamFactory *--> "payment response mapping xml file"
+
+
+
+
+EISUPaymentTransferJob o--> EISUPaymentStagingService
+EISUPaymentTransferJob o--> EISUPaymentTransferService
+
+EISUPaymentTransferServiceImpl --|> EISUPaymentTransferService
+
+class PaymentTransferProcessingDTO {
+String paymentNumber
+ProcessingStatus processingStatus
+String declineReason
+....
+}
+EISUPaymentStagingServiceImpl ..|> EISUPaymentStagingService
+EISUPaymentUpdatedEventListener --> EISUPaymentStagingService
+
+interface EISUPaymentStagingDao
+class EISUPaymentStagingJpaDao
+EISUPaymentStagingJpaDao ..|> EISUPaymentStagingDao
+
+EISUPaymentStagingServiceImpl *--> EISUPaymentStagingDao
+@enduml
