@@ -1,0 +1,82 @@
+@startuml
+allowmixing
+
+left to right direction
+
+
+
+skinparam package {
+  BackgroundColor<<LIB>> olive
+  BorderColor<<LIB>> olive
+}
+
+skinparam artifact {
+  BackgroundColor yellow
+  BorderColor brown
+}
+
+enum TransferStatus {
+pending
+sent
+processed
+}
+
+enum ProcessingStatus {
+stopped
+cleared
+declined
+}
+
+class PaymentUpdatedEvent
+class PaymentTransferEntity {
+Long batchNumber
+String transitNumber
+TransferStatus statusCd
+Date updated
+Boolean voided
+String paymentNumber
+int direction
+BigDecimal amount
+String currency
+String referenceNumber
+ProcessingStatus processingStatus
+String declineReason
+...
+}
+
+class EISUPaymentUpdatedEventListener {
++onApplicationEvent(paymentUpdatedEvent)
+}
+
+EISUPaymentUpdatedEventListener o--> PaymentUpdatedEvent
+
+interface EISUPaymentStagingService
+class EISUPaymentStagingServiceImpl{
++createUpdateStagingRecord(paymentUpdatedEvent event)
++updateStagingRecord(paymentTransferProcessingDTO)
++fetchStagingRecords(dateFrom, batchNumber)
++cleanup(dateTo)
+}
+
+class PaymentTransferProcessingDTO {
+String paymentNumber
+ProcessingStatus processingStatus
+String declineReason
+....
+}
+
+PaymentTransferEntity *--> TransferStatus
+PaymentTransferEntity *--> ProcessingStatus
+PaymentTransferProcessingDTO *--> ProcessingStatus
+
+EISUPaymentStagingServiceImpl *--> PaymentTransferProcessingDTO
+EISUPaymentStagingJpaDao o--> PaymentTransferEntity
+
+EISUPaymentStagingServiceImpl ..|> EISUPaymentStagingService
+EISUPaymentUpdatedEventListener --> EISUPaymentStagingService
+
+interface EISUPaymentStagingDao
+class EISUPaymentStagingJpaDao
+EISUPaymentStagingJpaDao ..|> EISUPaymentStagingDao
+EISUPaymentStagingServiceImpl *--> EISUPaymentStagingDao
+@enduml

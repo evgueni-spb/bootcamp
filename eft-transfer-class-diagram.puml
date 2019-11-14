@@ -1,0 +1,104 @@
+@startuml
+allowmixing
+
+left to right direction
+
+
+
+skinparam package {
+  BackgroundColor<<LIB>> olive
+  BorderColor<<LIB>> olive
+}
+
+skinparam artifact {
+  BackgroundColor yellow
+  BorderColor brown
+}
+
+
+
+interface EISUPaymentStagingService
+class EISUPaymentStagingServiceImpl{
++createUpdateStagingRecord(paymentUpdatedEvent event)
++updateStagingRecord(paymentTransferProcessingDTO)
++fetchStagingRecords(dateFrom, batchNumber)
++cleanup(dateTo)
+}
+
+EISUPaymentStagingServiceImpl *--> PaymentTransferProcessingDTO
+
+class EISUPaymentTransferJob {
++JobResults doExecute(map,auditor)
+}
+note "synchronous" as S
+S . EISUPaymentTransferJob
+
+
+
+
+
+interface EISUPaymentTransferService
+class EISUPaymentTransferServiceImpl{
++validateStagingRecord(paymentTransferEntity)
++mapStagingRecord(paymentTransferEntity)
+}
+
+EISUPaymentTransferServiceImpl o--> ProducerTemplate
+
+
+package Camel <<LIB>> {
+artifact "SFTP component"
+interface RouteBuilder
+interface Processor
+interface ProducerTemplate {
++sendBodyAndHeader(endpointUri,body,headerName,headerValue)
+}
+}
+
+class EISUPaymentTransferRouteBuilder {
++configure()
+}
+EISUPaymentTransferRouteBuilder ..|> RouteBuilder
+EISUPaymentTransferRouteBuilder *--> EISUPaymentTransferPostProcessor
+EISUPaymentTransferRouteBuilder o--> "SFTP component"
+
+class EISUPaymentTransferPostProcessor {
++process(exchange)
+-updateStagingRecords(batchNumber)
+-updatePayments(batchNumber)
+}
+
+EISUPaymentTransferPostProcessor ..|> Processor
+EISUPaymentTransferPostProcessor o--> EISUPaymentStagingDao
+
+package BeanIO <<LIB>> {
+abstract class BeanIOStreamFactory
+interface BeanWriter
+
+
+BeanIOStreamFactory --> "creates" BeanWriter
+}
+artifact "payment transfer mapping xml file"
+
+
+EISUPaymentTransferServiceImpl *--> BeanWriter
+EISUPaymentTransferServiceImpl *--> EISUPaymentTransferRouteBuilder
+
+BeanIOStreamFactory *-> "payment transfer mapping xml file"
+
+
+EISUPaymentTransferJob o--> EISUPaymentStagingService
+EISUPaymentTransferJob o--> EISUPaymentTransferService
+
+EISUPaymentTransferServiceImpl --|> EISUPaymentTransferService
+
+class PaymentTransferProcessingDTO {
+String paymentNumber
+ProcessingStatus processingStatus
+String declineReason
+....
+}
+EISUPaymentStagingServiceImpl ..|> EISUPaymentStagingService
+EISUPaymentUpdatedEventListener --> EISUPaymentStagingService
+
+@enduml

@@ -1,6 +1,10 @@
 @startuml
 allowmixing
 
+left to right direction
+
+
+
 skinparam package {
   BackgroundColor<<LIB>> olive
   BorderColor<<LIB>> olive
@@ -26,6 +30,7 @@ declined
 class PaymentUpdatedEvent
 class PaymentTransferEntity {
 Long batchNumber
+String transitNumber
 TransferStatus statusCd
 Date updated
 Boolean voided
@@ -38,50 +43,92 @@ ProcessingStatus processingStatus
 String declineReason
 ...
 }
-class CheckPaymentTransferEntity {
-String checkNumber
-String payeeName
-....
-}
-class EFTPaymentTransferEntity {
-String bankAccountType
-String transitNumber
-....
-}
-CheckPaymentTransferEntity --|> PaymentTransferEntity
-EFTPaymentTransferEntity --|> PaymentTransferEntity
-PaymentTransferEntity --|> TransferStatus
-PaymentTransferEntity --|> ProcessingStatus
+
+
+PaymentTransferEntity *--> TransferStatus
+PaymentTransferEntity *--> ProcessingStatus
+
+EISUPaymentTransferJob o--> EISUPaymentStagingService
+
+
 
 class EISUPaymentUpdatedEventListener {
-+onApplicationEvent(PaymentUpdatedEvent)
++onApplicationEvent(paymentUpdatedEvent)
 }
 
 EISUPaymentUpdatedEventListener o--> PaymentUpdatedEvent
 
 interface EISUPaymentStagingService
 class EISUPaymentStagingServiceImpl{
-+createUpdateStagingRecord(PaymentUpdatedEvent event)
-+updateStagingRecord(PaymentTransferProcessingDTO dto)
-+fetchStagingRecords(Date from, Long batchNumber)
-+cleanup(Date to)
++createUpdateStagingRecord(paymentUpdatedEvent event)
++updateStagingRecord(paymentTransferProcessingDTO)
++fetchStagingRecords(dateFrom, batchNumber)
++cleanup(dateTo)
 }
 
 EISUPaymentStagingServiceImpl *--> PaymentTransferProcessingDTO
 
-abstract class BaseAuditingJob
-
 class EISUPaymentTransferJob {
-+JobResults doExecute(Map map, Auditor auditor)
++JobResults doExecute(map,auditor)
 }
+note "synchronous" as S
+S . EISUPaymentTransferJob
 
-EISUPaymentTransferJob --|> BaseAuditingJob
+class EISUPaymentResponseJob {
++JobResults doExecute(map,auditor)
+}
+S . EISUPaymentTransferJob
+
+EISUPaymentTransferJob o--> EISUPaymentTransferService
+EISUPaymentTransferJob o--> EISUPaymentStagingService
+
+
+
 
 interface EISUPaymentTransferService
 class EISUPaymentTransferServiceImpl{
-+validateStagingRecord(PaymentTransferEntity)
-+mapStagingRecord(PaymentTransferEntity)
++validateStagingRecord(paymentTransferEntity)
++mapStagingRecord(paymentTransferEntity)
 }
+
+EISUPaymentTransferServiceImpl o--> ProducerTemplate
+EISUPaymentTransferServiceImpl o--> PaymentTransferEntity
+EISUPaymentStagingJpaDao o--> PaymentTransferEntity
+
+package Camel <<LIB>> {
+artifact "SFTP component"
+interface RouteBuilder
+interface Processor
+interface ProducerTemplate {
++sendBodyAndHeader(endpointUri,body,headerName,headerValue)
+}
+}
+
+EISUPaymentTransferService *--> EISUPaymentResponseRouteBuilder
+
+
+class EISUPaymentResponseRouteBuilder {
++configure()
+}
+EISUPaymentResponseRouteBuilder ..|> RouteBuilder
+EISUPaymentResponseRouteBuilder *--> EISUPaymentResponseProcessor
+EISUPaymentResponseRouteBuilder o--> "SFTP component"
+
+class EISUPaymentTransferRouteBuilder {
++configure()
+}
+EISUPaymentTransferRouteBuilder ..|> RouteBuilder
+EISUPaymentTransferRouteBuilder *--> EISUPaymentTransferPostProcessor
+EISUPaymentTransferRouteBuilder o--> "SFTP component"
+
+class EISUPaymentTransferPostProcessor {
++process(exchange)
+-updateStagingRecords(batchNumber)
+-updatePayments(batchNumber)
+}
+
+EISUPaymentTransferPostProcessor ..|> Processor
+EISUPaymentTransferPostProcessor o--> EISUPaymentStagingDao
 
 package BeanIO <<LIB>> {
 abstract class BeanIOStreamFactory
