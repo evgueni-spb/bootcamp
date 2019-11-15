@@ -1,0 +1,33 @@
+@startuml
+
+class EISUClearingJob {
++JobResults doExecute(map,auditor)
+}
+note "asynchronous" as S
+S . EISUClearingJob
+
+interface EISUPaymentStagingService {
++fetchPaymentsToClear()
++autoClearStagingRecord(paymentNumber)
+....
+}
+
+EISUClearingJob o-> EISUPaymentStagingService
+
+interface AsyncTaskManager <<BASE>> {
++addTaskToQueue(taskInfo, date)
+}
+
+class EISUPaymentClearingTaskAdapter {
++handleTask(taskInfo, auditor)
+}
+
+AsyncTaskManager ..> EISUPaymentClearingTaskAdapter
+
+interface PaymentLifecycleService <<BASE>> {
++executeAction(payment,paymentAction,null)
+}
+
+EISUPaymentClearingTaskAdapter o--> PaymentLifecycleService
+EISUPaymentClearingTaskAdapter o--> EISUPaymentStagingService
+@enduml

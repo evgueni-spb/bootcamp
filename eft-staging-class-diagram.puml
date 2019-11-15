@@ -18,19 +18,24 @@ skinparam artifact {
 enum TransferStatus {
 pending
 sent
-processed
 }
+
+
+class PaymentUpdatedEvent
+
+
 
 enum ProcessingStatus {
 stopped
 cleared
 declined
+autoCleared
 }
 
-class PaymentUpdatedEvent
-class PaymentTransferEntity {
+
+abstract class PaymentTransferEntity {
 Long batchNumber
-String transitNumber
+Long responseBatchNumber
 TransferStatus statusCd
 Date updated
 Boolean voided
@@ -44,6 +49,22 @@ String declineReason
 ...
 }
 
+class CheckPaymentTransferEntity {
+String checkNumber
+Date checkDate
+String payeeName
+...
+}
+
+
+class EFTPaymentTransferEntity {
+String transitNumber
+....
+}
+
+CheckPaymentTransferEntity --|> PaymentTransferEntity
+EFTPaymentTransferEntity --|> PaymentTransferEntity
+
 class EISUPaymentUpdatedEventListener {
 +onApplicationEvent(paymentUpdatedEvent)
 }
@@ -54,12 +75,22 @@ interface EISUPaymentStagingService
 class EISUPaymentStagingServiceImpl{
 +createUpdateStagingRecord(paymentUpdatedEvent event)
 +updateStagingRecord(paymentTransferProcessingDTO)
-+fetchStagingRecords(dateFrom, batchNumber)
++fetchStagingRecords(paymentType,dateFrom, batchNumber)
++fetchPaymentsToClear()
++autoClearStagingRecord(paymentNumber)
 +cleanup(dateTo)
 }
 
+note as PRA
+ invokes BASE services to pull
+ data from the billing domain needed
+ to create a staging record
+end note
+
+PRA . EISUPaymentStagingServiceImpl
+
 class PaymentTransferProcessingDTO {
-String paymentNumber
+String referenceNumber
 ProcessingStatus processingStatus
 String declineReason
 ....

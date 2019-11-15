@@ -11,163 +11,148 @@ skinparam package {
 }
 
 skinparam artifact {
-  BackgroundColor yellow
+  BackgroundColor lightgreen
   BorderColor brown
 }
 
-enum TransferStatus {
-pending
-sent
-processed
-}
-
-enum ProcessingStatus {
-stopped
-cleared
-declined
-}
-
-class PaymentUpdatedEvent
-class PaymentTransferEntity {
-Long batchNumber
-String transitNumber
-TransferStatus statusCd
-Date updated
-Boolean voided
-String paymentNumber
-int direction
-BigDecimal amount
-String currency
-String referenceNumber
-ProcessingStatus processingStatus
-String declineReason
-...
-}
-
-
-PaymentTransferEntity *--> TransferStatus
-PaymentTransferEntity *--> ProcessingStatus
-
-EISUPaymentTransferJob o--> EISUPaymentStagingService
-
-
-
-class EISUPaymentUpdatedEventListener {
-+onApplicationEvent(paymentUpdatedEvent)
-}
-
-EISUPaymentUpdatedEventListener o--> PaymentUpdatedEvent
 
 interface EISUPaymentStagingService
-class EISUPaymentStagingServiceImpl{
-+createUpdateStagingRecord(paymentUpdatedEvent event)
-+updateStagingRecord(paymentTransferProcessingDTO)
-+fetchStagingRecords(dateFrom, batchNumber)
-+cleanup(dateTo)
-}
 
-EISUPaymentStagingServiceImpl *--> PaymentTransferProcessingDTO
-
-class EISUPaymentTransferJob {
-+JobResults doExecute(map,auditor)
-}
-note "synchronous" as S
-S . EISUPaymentTransferJob
 
 class EISUPaymentResponseJob {
-+JobResults doExecute(map,auditor)
++doExecute(map,auditor)
+-processCheckResponse
 }
-S . EISUPaymentTransferJob
+note "asynchronous" as S
+S . EISUPaymentResponseJob
 
-EISUPaymentTransferJob o--> EISUPaymentTransferService
-EISUPaymentTransferJob o--> EISUPaymentStagingService
+note as PR
+Reads file, updates staging table,
+ backs up file, reads staging data,
+  processes each record in async task
+end note
+
+PR .. EISUPaymentResponseJob
+
+EISUPaymentResponseTransferJob o--> EISUReceiveCheckPaymentService
+EISUPaymentResponseTransferJob o--> EISUReceiveEFTPaymentService
+EISUPaymentResponseProcessor o--> EISUPaymentStagingService
 
 
-
-
-interface EISUPaymentTransferService
-class EISUPaymentTransferServiceImpl{
-+validateStagingRecord(paymentTransferEntity)
-+mapStagingRecord(paymentTransferEntity)
+interface EISUReceiveCheckPaymentService {
++processFile(jobUid)
 }
 
-EISUPaymentTransferServiceImpl o--> ProducerTemplate
-EISUPaymentTransferServiceImpl o--> PaymentTransferEntity
-EISUPaymentStagingJpaDao o--> PaymentTransferEntity
+note "Camel producer marker interfaces" as P
+P .. EISUReceiveCheckPaymentService
+P . EISUReceiveEFTPaymentService
+
+interface EISUReceiveEFTPaymentService {
++processFile(jobUid)
+}
+
+EISUReceiveCheckPaymentService ..> EISUPaymentResponseRouteBuilder
+EISUReceiveEFTPaymentService ..> EISUPaymentResponseRouteBuilder
 
 package Camel <<LIB>> {
-artifact "SFTP component"
+component "SFTP component"
 interface RouteBuilder
 interface Processor
-interface ProducerTemplate {
-+sendBodyAndHeader(endpointUri,body,headerName,headerValue)
 }
-}
-
-EISUPaymentTransferService *--> EISUPaymentResponseRouteBuilder
 
 
 class EISUPaymentResponseRouteBuilder {
 +configure()
+-processException()
 }
+
+note as B
+ Builds two routes,
+ one for check payments and
+  the other for EFT payments
+end note
+B . EISUPaymentResponseRouteBuilder
+
 EISUPaymentResponseRouteBuilder ..|> RouteBuilder
 EISUPaymentResponseRouteBuilder *--> EISUPaymentResponseProcessor
 EISUPaymentResponseRouteBuilder o--> "SFTP component"
 
-class EISUPaymentTransferRouteBuilder {
-+configure()
-}
-EISUPaymentTransferRouteBuilder ..|> RouteBuilder
-EISUPaymentTransferRouteBuilder *--> EISUPaymentTransferPostProcessor
-EISUPaymentTransferRouteBuilder o--> "SFTP component"
 
-class EISUPaymentTransferPostProcessor {
-+process(exchange)
--updateStagingRecords(batchNumber)
--updatePayments(batchNumber)
+
+
+
+interface EISUPaymentResponseMapper {
+ +validateResponseRecord(paymentTransferEntity)
+ +mapResponseRecord(paymentTransferEntity)
 }
 
-EISUPaymentTransferPostProcessor ..|> Processor
-EISUPaymentTransferPostProcessor o--> EISUPaymentStagingDao
+class EISUCheckPaymentResponseMapperImpl
+EISUCheckPaymentResponseMapperImpl ..|>  EISUPaymentResponseMapper
+class EISUEFTPaymentResponseMapperImpl
+EISUEFTPaymentResponseMapperImpl ..|>  EISUPaymentResponseMapper
+
+
+class EISUPaymentResponseProcessor{
+process(exchange)
+}
+
+note as PRP
+ Reads the file, validates,
+ updates staging records with
+ responseBatchNo,processingStatus,
+ updated,declineReason in the same transaction.
+ Creates async tasks to process each record
+ in the current response batch
+end note
+
+PRP . EISUPaymentResponseProcessor
+
+interface AsyncTaskManager<<BASE>> {
+addTaskToQueue(taskInfo, date)
+}
+
+EISUPaymentResponseProcessor o--> AsyncTaskManager
+
+class EISUPaymentResponseProcessingAdapter {
++handleTask(taskInfo, auditor)
+}
+
+note as PRA
+ invokes BASE services to clear
+ or decline payment, closes the claim,
+ triggers DocGen, etc
+end note
+
+PRA . EISUPaymentResponseProcessingAdapter
+
+AsyncTaskManager ..> EISUPaymentResponseProcessingAdapter
+
+EISUPaymentResponseProcessor ..|> Processor
+
+
+
+EISUPaymentResponseProcessor *-> EISUPaymentResponseMapperImpl
 
 package BeanIO <<LIB>> {
 abstract class BeanIOStreamFactory
-interface BeanWriter
 interface BeanReader
 
-BeanIOStreamFactory --> "creates" BeanWriter
+
 BeanIOStreamFactory --> "creates" BeanReader
 }
-artifact "payment transfer mapping xml file"
-artifact "payment response mapping xml file"
+
+artifact "EFT payment response mapping xml file"
+artifact "check payment response mapping xml file"
 
 
-EISUPaymentTransferServiceImpl *--> BeanWriter
-EISUPaymentTransferServiceImpl *--> BeanReader
-
-BeanIOStreamFactory *-> "payment transfer mapping xml file"
-BeanIOStreamFactory *--> "payment response mapping xml file"
+BeanIOStreamFactory *-->  "EFT payment response mapping xml file"
+BeanIOStreamFactory *--> "check payment response mapping xml file"
 
 
+EISUPaymentResponseMapperImpl o--> BeanReader
 
 
-EISUPaymentTransferJob o--> EISUPaymentStagingService
-EISUPaymentTransferJob o--> EISUPaymentTransferService
 
-EISUPaymentTransferServiceImpl --|> EISUPaymentTransferService
 
-class PaymentTransferProcessingDTO {
-String paymentNumber
-ProcessingStatus processingStatus
-String declineReason
-....
-}
-EISUPaymentStagingServiceImpl ..|> EISUPaymentStagingService
-EISUPaymentUpdatedEventListener --> EISUPaymentStagingService
 
-interface EISUPaymentStagingDao
-class EISUPaymentStagingJpaDao
-EISUPaymentStagingJpaDao ..|> EISUPaymentStagingDao
-
-EISUPaymentStagingServiceImpl *--> EISUPaymentStagingDao
 @enduml

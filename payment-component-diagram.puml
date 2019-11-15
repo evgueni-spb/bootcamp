@@ -1,6 +1,6 @@
 @startuml
 
-
+left to right direction
 
 skinparam  package {
 
@@ -27,7 +27,8 @@ package "EIS Batch App" {
 [Commissions]<<EIS>>
 [Claims]<<EIS>>
 [Payment Transfer Job]
-[Payment Confirmation Job]
+[Payment Response Job]
+[Payment Clearing Job]
 [Payment Staging Layer]
 [Apache Camel]<<FRAMEWORK>>
 [Payment Transfer Layer]
@@ -40,18 +41,19 @@ SFTP - [File Exchange]
 
 [File Exchange] <--> [Payment Processing]
 
-[Payment Transfer Job] --> [Apache Camel]
+[Payment Transfer Layer] --> [Apache Camel]
 
-[Payment Confirmation Job]  --> [Apache Camel]
-[Apache Camel] ----> SFTP
+[Apache Camel] --> SFTP
 [Billing] -> [Payment Staging Layer]
 [Commissions] -> [Billing]
 [Claims]  -> [Billing]
 [Payment Transfer Job] -> [Payment Transfer Layer]
-[Payment Confirmation Job] -> [Payment Transfer Layer]
-[Payment Transfer Job] -> [Payment Staging Layer]
-[Payment Confirmation Job] -> [Payment Staging Layer]
-[Payment Transfer Layer] -> [Billing]
+[Payment Response Job] -> [Payment Transfer Layer]
+[Payment Transfer Job] -----> [Payment Staging Layer]
+[Payment Response Job] -> [Payment Staging Layer]
+[Payment Clearing Job] -> [Payment Staging Layer]
+[Payment Clearing Job] --> [Billing]
+
 
 
 
