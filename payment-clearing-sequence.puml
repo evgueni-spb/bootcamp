@@ -1,0 +1,32 @@
+@startuml
+
+skinparam  participant {
+  BackgroundColor yellow
+  BorderColor brown
+}
+
+actor "Job Scheduler"
+participant EISUClearingJob
+participant EISUPaymentStagingService
+participant AsyncTaskManager   #moccasin
+participant EISUPaymentClearingTaskAdapter
+participant PaymentLifecycleService  #moccasin
+
+"Job Scheduler" ->o EISUClearingJob ++ : run
+EISUClearingJob -> EISUClearingJob: doExecute
+EISUClearingJob -> EISUPaymentStagingService ++ : fetchPaymentsToClear
+return
+loop payments to clear
+EISUClearingJob -> AsyncTaskManager ++: addTaskToQueue
+
+AsyncTaskManager -->o EISUPaymentClearingTaskAdapter : handleTask
+note over EISUPaymentClearingTaskAdapter #aqua :asynchronous
+EISUPaymentClearingTaskAdapter -> EISUPaymentStagingService ++ :autoClearStagingRecord
+
+return
+EISUPaymentClearingTaskAdapter -> PaymentLifecycleService ++ :executeAction
+return
+
+end
+
+@enduml

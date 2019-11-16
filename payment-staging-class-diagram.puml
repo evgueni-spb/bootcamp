@@ -73,7 +73,7 @@ EISUPaymentUpdatedEventListener o--> PaymentUpdatedEvent
 
 interface EISUPaymentStagingService
 class EISUPaymentStagingServiceImpl{
-+createUpdateStagingRecord(paymentUpdatedEvent event)
++stagePayment(paymentUpdatedEvent event)
 +updateStagingRecord(paymentTransferProcessingDTO)
 +fetchStagingRecords(paymentType,dateFrom, batchNumber)
 +fetchPaymentsToClear()
@@ -107,7 +107,10 @@ EISUPaymentStagingServiceImpl ..|> EISUPaymentStagingService
 EISUPaymentUpdatedEventListener --> EISUPaymentStagingService
 
 interface EISUPaymentStagingDao
-class EISUPaymentStagingJpaDao
+class EISUPaymentStagingJpaDao {
++retrievePaymentForStaging(paymentUpdatedEvent)
++createUpdateStagingRecord(paymentTransferEntity)
+}
 EISUPaymentStagingJpaDao ..|> EISUPaymentStagingDao
 EISUPaymentStagingServiceImpl *--> EISUPaymentStagingDao
 @enduml

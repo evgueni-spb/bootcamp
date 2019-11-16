@@ -1,5 +1,7 @@
 @startuml
 
+left to right direction
+
 skinparam actorBackgroundColor<< EXTERNAL >> YellowGreen
 
 skinparam usecase {
@@ -12,7 +14,8 @@ skinparam usecase {
 :EIS Commissions: as Commissions
 :EIS Claims: as Claims
 :EIS Payment transfer job: as TransferJob
-:EIS Payment confirmation job: as ConfirmJob
+:EIS Payment response job: as ConfirmJob
+:EIS Payment clearing job: as ClearJob
 actor :Payment gateway: as PG << EXTERNAL >>
 
 
@@ -24,9 +27,9 @@ Claims -> (Create payment)
 
 
 TransferJob --> "1" (Read staging records)
-TransferJob --> "2" (Generate payment file)
-TransferJob --> "3" (Upload payment file)
-(Retry upload) .> (Upload payment file) :extend
+TransferJob --> "2" (Generate EFT and Check payment files)
+TransferJob --> "3" (Upload EFT and Check payment files)
+(Retry upload) .> (Upload EFT and Check payment files) :extend
 TransferJob --> "4" (Update status of staging records)
 TransferJob --> "5" (Generate success/failure BAM activity)
 
@@ -50,10 +53,13 @@ PG --> "3" (Upload response file)
 
 
 
-ConfirmJob --> "1" (Read response file)
+ConfirmJob --> "1" (Read EFT and Check response files)
 ConfirmJob --> "2" (Update staging records)
 ConfirmJob --> "3" (Update payment status)
 ConfirmJob --> "4" (Back up response file)
+
+ClearJob --> "1" (Fetch staged payments to clear automatically)
+ClearJob --> "2" (Set payment status to Cleared)
 
 
 

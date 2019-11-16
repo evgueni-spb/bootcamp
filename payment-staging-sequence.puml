@@ -1,0 +1,31 @@
+@startuml
+
+skinparam  participant {
+  BackgroundColor yellow
+  BorderColor brown
+}
+
+actor Billing
+actor Commissions
+actor Claims
+
+participant EISUPaymentUpdatedEventListener
+participant EISUPaymentStagingService
+participant EISUPaymentStagingDao
+
+
+Billing -> EISUPaymentUpdatedEventListener : generate PaymentUpdatedEvent
+Commissions -> EISUPaymentUpdatedEventListener : generate PaymentUpdatedEvent
+Claims -> EISUPaymentUpdatedEventListener : generate PaymentUpdatedEvent
+
+EISUPaymentUpdatedEventListener -> EISUPaymentUpdatedEventListener ++ :onApplicationEvent
+opt "payment qualifies for staging"
+EISUPaymentUpdatedEventListener -> EISUPaymentStagingService ++ : stagePayment
+EISUPaymentStagingService -> EISUPaymentStagingDao ++ :retrievePaymentForStaging
+return
+EISUPaymentStagingService -> EISUPaymentStagingDao ++ :createUpdateStagingRecord
+return
+return
+end
+
+@enduml
