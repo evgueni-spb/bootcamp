@@ -37,7 +37,7 @@ interface EISUPaymentTransferService{
 +transferEFTPayments(checkPaymentTransferEntities)
 }
 class EISUPaymentTransferServiceImpl{
--validateStagingRecord(paymentTransferEntity)
+
 }
 
 interface EISUPaymentTransferMapper {
@@ -112,11 +112,11 @@ EISUPaymentTransferPostProcessor ..|> Processor
 EISUPaymentTransferPostProcessor o--> EISUPaymentStagingService
 
 package BeanIO <<LIB>> {
-abstract class BeanIOStreamFactory
+abstract class StreamFactory
 interface BeanWriter
 
 
-BeanIOStreamFactory --> "creates" BeanWriter
+StreamFactory --> "creates" BeanWriter
 }
 artifact "payment transfer CHECK mapping xml file"
 artifact "payment transfer EFT mapping xml file"
@@ -127,8 +127,8 @@ EISUEFTPaymentTransferMapperImpl o-> BeanWriter
 EISUPaymentTransferServiceImpl *--> EISUCheckPaymentTransferRouteBuilder
 EISUPaymentTransferServiceImpl *--> EISUEFTPaymentTransferRouteBuilder
 
-BeanIOStreamFactory *-> "payment transfer CHECK mapping xml file"
-BeanIOStreamFactory *-> "payment transfer EFT mapping xml file"
+StreamFactory *-> "payment transfer CHECK mapping xml file"
+StreamFactory *-> "payment transfer EFT mapping xml file"
 
 
 EISUPaymentTransferJob o-> EISUPaymentStagingService

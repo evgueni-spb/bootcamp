@@ -1,0 +1,47 @@
+@startuml
+skinparam  participant {
+  BackgroundColor yellow
+  BorderColor brown
+}
+
+actor "Job Scheduler"
+participant EISUPaymentTransferJob
+participant EISUPaymentStagingServiceImpl
+participant EISUPaymentTransferServiceImpl
+participant EISUCheckPaymentTransferMapperImpl
+participant EISUEFTPaymentTransferMapperImpl
+participant StreamFactory
+participant BeanWriter
+
+
+"Job Scheduler" ->o EISUPaymentTransferJob ++ : run
+EISUPaymentTransferJob -> EISUPaymentTransferJob: doExecute
+EISUPaymentTransferJob -> EISUPaymentTransferJob ++ : fetchCheckPayments
+EISUPaymentTransferJob -> EISUPaymentStagingServiceImpl ++ : fetchStagingRecords
+return
+return
+
+EISUPaymentTransferJob -> EISUPaymentTransferJob ++ : fetchEFTPayments
+EISUPaymentTransferJob -> EISUPaymentStagingServiceImpl ++: fetchStagingRecords
+return
+return
+
+EISUPaymentTransferJob -> EISUPaymentTransferServiceImpl ++ : transferCheckPayments
+EISUCheckPaymentTransferMapperImpl ->o StreamFactory :createWriter
+loop "all check payments"
+EISUPaymentTransferServiceImpl -> EISUCheckPaymentTransferMapperImpl ++ :validateStagingRecord
+return
+EISUPaymentTransferServiceImpl -> EISUCheckPaymentTransferMapperImpl ++ :mapStagingRecord
+EISUCheckPaymentTransferMapperImpl -> BeanWriter ++ :write
+return
+
+return
+end
+return
+
+@enduml
+
+
+
+
+@enduml
