@@ -12,6 +12,11 @@ participant EISUCheckPaymentTransferMapperImpl
 participant EISUEFTPaymentTransferMapperImpl
 participant StreamFactory
 participant BeanWriter
+participant ProducerTemplate
+participant EISUPaymentTransferRouteBuilder
+participant "SFTP component"
+participant EISUPaymentTransferPostProcessor
+
 
 
 "Job Scheduler" ->o EISUPaymentTransferJob ++ : run
@@ -32,12 +37,42 @@ loop "all check payments"
 EISUPaymentTransferServiceImpl -> EISUCheckPaymentTransferMapperImpl ++ :validateStagingRecord
 return
 EISUPaymentTransferServiceImpl -> EISUCheckPaymentTransferMapperImpl ++ :mapStagingRecord
+note over EISUCheckPaymentTransferMapperImpl #aqua :payment transfer CHECK mapping xml file
 EISUCheckPaymentTransferMapperImpl -> BeanWriter ++ :write
 return
 
 return
 end
+EISUPaymentTransferServiceImpl -> ProducerTemplate : sendBodyAndHeader
+ProducerTemplate -[#blue]>o EISUPaymentTransferRouteBuilder:configure
+note over EISUPaymentTransferRouteBuilder #aqua : retry N times on fail with timeout M
+ProducerTemplate -[#blue]>o "SFTP component":send
+ProducerTemplate -[#blue]>o EISUPaymentTransferPostProcessor:process
+EISUPaymentTransferPostProcessor -> EISUPaymentTransferPostProcessor:updateStagingRecords
+EISUPaymentTransferPostProcessor -> EISUPaymentTransferPostProcessor:updatePayments
 return
+
+EISUPaymentTransferJob -> EISUPaymentTransferServiceImpl ++ : transferEFTPayments
+EISUCheckPaymentTransferMapperImpl ->o StreamFactory :createWriter
+loop "all EFT payments"
+EISUPaymentTransferServiceImpl -> EISUCheckPaymentTransferMapperImpl ++ :validateStagingRecord
+return
+EISUPaymentTransferServiceImpl -> EISUCheckPaymentTransferMapperImpl ++ :mapStagingRecord
+note over EISUCheckPaymentTransferMapperImpl #aqua :payment transfer EFT mapping xml file
+EISUCheckPaymentTransferMapperImpl -> BeanWriter ++ :write
+return
+
+return
+end
+EISUPaymentTransferServiceImpl -> ProducerTemplate : sendBodyAndHeader
+ProducerTemplate -[#blue]>o EISUPaymentTransferRouteBuilder:configure
+note over EISUPaymentTransferRouteBuilder #aqua : retry N times on fail with timeout M
+ProducerTemplate -[#blue]>o "SFTP component":send
+ProducerTemplate -[#blue]>o EISUPaymentTransferPostProcessor:process
+EISUPaymentTransferPostProcessor -> EISUPaymentTransferPostProcessor:updateStagingRecords
+EISUPaymentTransferPostProcessor -> EISUPaymentTransferPostProcessor:updatePayments
+return
+
 
 @enduml
 

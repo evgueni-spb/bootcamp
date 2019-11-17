@@ -25,7 +25,7 @@ class EISUPaymentTransferJob {
 -fetchCheckPayments(date, batchNumber)
 -fetchEFTPayments(date, batchNumber)
 }
-note "synchronous" as S
+note   "synchronous" as S #aqua
 S . EISUPaymentTransferJob
 
 
@@ -66,30 +66,19 @@ interface ProducerTemplate {
 
 
 
-class EISUPaymentTransferRouteHelper {
-+processException()
-}
-EISUCheckPaymentTransferRouteBuilder ..|> RouteBuilder
-EISUCheckPaymentTransferRouteBuilder *--> EISUPaymentTransferPostProcessor
-EISUCheckPaymentTransferRouteBuilder o--> "SFTP component"
+EISUPaymentTransferRouteBuilder ..|> RouteBuilder
+EISUPaymentTransferRouteBuilder *--> EISUPaymentTransferPostProcessor
+EISUPaymentTransferRouteBuilder o-> "SFTP component"
 
-EISUEFTPaymentTransferRouteBuilder *--> EISUPaymentTransferRouteHelper
-EISUCheckPaymentTransferRouteBuilder *--> EISUPaymentTransferRouteHelper
+note top of EISUPaymentTransferRouteBuilder #aqua : creates separate routes to process check and EFT payments
 
-EISUEFTPaymentTransferRouteBuilder ..|> RouteBuilder
-EISUEFTPaymentTransferRouteBuilder *--> EISUPaymentTransferPostProcessor
-EISUEFTPaymentTransferRouteBuilder o--> "SFTP component"
 
-class EISUCheckPaymentTransferRouteBuilder {
+
+class EISUPaymentTransferRouteBuilder {
 +configure()
 }
 
-class EISUEFTPaymentTransferRouteBuilder {
-+configure()
-}
 
-EISUCheckPaymentTransferRouteBuilder --|> EISUPaymentTransferRouteBuilder
-EISUEFTPaymentTransferRouteBuilder -|> EISUPaymentTransferRouteBuilder
 
 
 class EISUPaymentTransferPostProcessor {
@@ -98,7 +87,7 @@ class EISUPaymentTransferPostProcessor {
 -updatePayments(batchNumber)
 }
 
-note as PRA
+note as PRA #aqua
 <b>updateStagingRecords</b> method
 is used to update transferStatus and updated date
  <b>updatePayments</b> method invokes BASE service
@@ -124,8 +113,7 @@ artifact "payment transfer EFT mapping xml file"
 
 EISUCheckPaymentTransferMapperImpl o-> BeanWriter
 EISUEFTPaymentTransferMapperImpl o-> BeanWriter
-EISUPaymentTransferServiceImpl *--> EISUCheckPaymentTransferRouteBuilder
-EISUPaymentTransferServiceImpl *--> EISUEFTPaymentTransferRouteBuilder
+EISUPaymentTransferServiceImpl *--> EISUPaymentTransferRouteBuilder
 
 StreamFactory *-> "payment transfer CHECK mapping xml file"
 StreamFactory *-> "payment transfer EFT mapping xml file"
@@ -135,6 +123,9 @@ EISUPaymentTransferJob o-> EISUPaymentStagingService
 EISUPaymentTransferJob o--> EISUPaymentTransferService
 
 EISUPaymentTransferServiceImpl --|> EISUPaymentTransferService
+
+ProducerTemplate ..> EISUPaymentTransferRouteBuilder
+
 
 
 
