@@ -1,37 +1,162 @@
 @startuml
 
 allowmixing
-class EISUQuoteFacade {
-  EISUPolicyDto createQuote(EISUPolicyDto quote)
-}
-class GLICHealthPolicyRestServiceImpl
-class GLICDentalPPOPolicyRestServiceImpl
 
-
-interface EISUPolicyRestService
-
-class EISUPolicyRestServiceImpl{
-}
-
-class EISUDentalPPOPolicyRestServiceImpl{
-}
-class EISUAbstractPolicyRestServiceImpl
-EISUDentalPPOPolicyRestServiceImpl --|> EISUAbstractPolicyRestServiceImpl
-EISUPolicyRestServiceImpl --|> EISUAbstractPolicyRestServiceImpl
-EISUPolicyRestServiceImpl ..|> EISUPolicyRestService
-
-class DentalPPOOpenLPolicyRulesServiceAdapter {
+class RestPreconfigAutoPolicyDetailsInfo{
 
 }
+note top of RestPreconfigAutoPolicyDetailsInfo #aqua : customised preconfig DTO
 
-class OpenLServiceFactoryBean {
+
+
+class AbstractPreconfigRestService
+
+class EISUAutoQuoteRestServiceImpl{
++createQuote(request)
++updateQuote(request, policyNumber)
++getQuote(policyNumber)
++rateQuote(policyNumber)
++issueQuote(policyNumber, ctx)
+-mapCreateResponse
+}
+
+EISUAutoQuoteRestServiceImpl --|> AbstractPreconfigRestService
+
+EISUAutoQuoteRestServiceImpl ..> RestPreconfigAutoPolicyDetailsInfo
+
+interface RestQuoteFacade{
+}
+
+interface MapperRegistry{
++getMapper(classFrom, classTo)
+}
+
+note top of MapperRegistry #aqua : separate REST-to-Domain and Domain-to-REST mapper registries
+
+interface Mapper {
++map(from)
+}
+
+MapperRegistry o--> EISURestPolicyInfoMapper
+MapperRegistry o--> EISURestDriverPartyInfoMapper
+
+
+
+RestPolicyInfoMapper ..|> Mapper
+EISURestPolicyInfoMapper --|> RestPolicyInfoMapper
+
+RestDriverPartyInfoMapper ..|> Mapper
+EISURestDriverPartyInfoMapper --|> RestDriverPartyInfoMapper
+
+
+class EISURestPolicyInfoMapper {
+ +map(PolicySearchResult source, RestPolicyInfo target)
+}
+
+class EISURestDriverPartyInfoMapper {
+ +map(DriverInfo source, RestDriverInfo target)
+}
+
+note "There are several mappers, those 2 are just examples" as N2
+EISURestPolicyInfoMapper .. N2
+N2 .. EISURestDriverPartyInfoMapper
+
+class RestPreconfigAutoQuoteFacadeAdapter {
+createQuote(componentName, version,productCd, quoteInfo)
+getQuoteDetails(String policyNumber)
+}
+
+RestPreconfigAutoQuoteFacadeAdapter o--> QuoteLifecycleService
+
+
+
+class  PrecofigRestProcessorHelper {
+retriveComponentConfigurations(productCd, version)
++genComponentInfo(parent, componentName, configurations)
+}
+
+
+
+
+interface DataValidatorRegistry{
++ validateData(issueContext, resultStatus)
+}
+
+
+RestPreconfigAutoQuoteFacadeAdapter ..|> RestQuoteFacade
+
+
+interface QuoteLifecycleService{
++rate(quote, txInfo)
++save(quote)
+}
+
+
+interface PackageFacade {
+evalTable(tableName, root, instance,context)
+getAvailablePackages(root,instance,context)
+}
+
+abstract class RestQuoteProcessor
+
+
+RestPreconfigAutoQuoteFacadeAdapter *-> RestQuoteProcessor
+
+class RestPreconfigCreationQuoteProcessor{
++processor(productCd,version,request,componentName)
 
 }
 
-class DentalPPOOpenLPolicyRuleService {
+
+class RestPreconfigRetrievalQuoteProcessor {
++processor(productCd,version,request,componentName)
+}
+
+class RestPreconfigEndorsementQuoteProcessor{
++processor(request)
+}
+
+class RestPreconfigRateQuoteProcessor {
++processor(productCd,version,request,componentName)
+}
+
+class RestPreconfigIssueQuoteProcessor {
++processor(productCd,version,request,componentName)
+}
+
+RestPreconfigRetrievalQuoteProcessor ..|> RestQuoteProcessor
+RestPreconfigEndorsementQuoteProcessor ..|> RestQuoteProcessor
+
+RestPreconfigCreationQuoteProcessor ..|> RestQuoteProcessor
+RestPreconfigRateQuoteProcessor ..|> RestQuoteProcessor
+RestPreconfigIssueQuoteProcessor ..|> RestQuoteProcessor
+
+class ComponentInfoHandler{
++validateBlsRulesFromConstraints(policy, status)
++validateBlsRulesByTag(policy, tag)
+}
+
+
+
+
+
+EISUAutoQuoteRestServiceImpl o--> RestPreconfigAutoQuoteFacadeAdapter
+
+
+RestQuoteProcessor o--> MapperRegistry
+RestQuoteProcessor o--> PrecofigRestProcessorHelper
+RestQuoteProcessor o--> PackageFacade
+RestQuoteProcessor o--> ComponentInfoHandler
+RestQuoteProcessor ..> PolicyDao
+RestQuoteProcessor ..> PolicyFacade
+
+
+
+
+interface PurchaseHandler{
 
 }
 
-artifact "Plan Configuration XLSX files"
+
 
 @enduml

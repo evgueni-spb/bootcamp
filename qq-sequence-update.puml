@@ -1,0 +1,51 @@
+@startuml
+
+skinparam  participant {
+  BackgroundColor yellow
+  BorderColor brown
+}
+
+actor DXP
+
+participant EISUAutoQuoteRestServiceImpl
+participant RestPreconfigAutoQuoteFacadeAdapter
+participant RestPreconfigEndorsementQuoteProcessor
+participant PrecofigRestProcessorHelper
+participant MapperRegistry
+participant Mapper
+participant PackageFacade
+participant ComponentInfoHandler
+participant QuoteLifecycleService
+
+
+
+DXP ->o EISUAutoQuoteRestServiceImpl:updateQuote
+EISUAutoQuoteRestServiceImpl --> RestPreconfigAutoQuoteFacadeAdapter ++: updateQuote
+RestPreconfigAutoQuoteFacadeAdapter --> RestPreconfigEndorsementQuoteProcessor ++: process
+RestPreconfigEndorsementQuoteProcessor --> ComponentInfoHandler ++ :retrievePolicySummary
+return
+RestPreconfigEndorsementQuoteProcessor --> PrecofigRestProcessorHelper ++:retrieveComponentConfigurations
+return
+loop "all mappers for policy"
+RestPreconfigEndorsementQuoteProcessor -->o MapperRegistry:getMapper
+RestPreconfigEndorsementQuoteProcessor --> Mapper ++:map
+note over Mapper #aqua: map attributes from REST DTO into Policy entity
+note over Mapper #aqua: preconfig mappers are extended to support custom attributes
+return
+RestPreconfigEndorsementQuoteProcessor --> PackageFacade ++:evalTable
+return
+note over PackageFacade #aqua: Apply state specific values
+end
+RestPreconfigEndorsementQuoteProcessor --> ComponentInfoHandler ++: validateBlsRulesByTag
+note over ComponentInfoHandler #aqua: run rules specific for REST context only
+return
+RestPreconfigEndorsementQuoteProcessor --> QuoteLifecycleService ++:save
+return
+return
+return
+EISUAutoQuoteRestServiceImpl --> EISUAutoQuoteRestServiceImpl ++:mapUpdateResponse
+return
+
+
+
+@enduml

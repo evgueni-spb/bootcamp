@@ -1,0 +1,68 @@
+@startuml
+
+
+
+skinparam actorBackgroundColor<< EXTERNAL >> YellowGreen
+
+skinparam usecase {
+
+	BackgroundColor<< EXTERNAL >> YellowGreen
+	BorderColor<< EXTERNAL >> YellowGreen
+}
+
+:EIS Billing: as Billing
+:EIS Commissions: as Commissions
+:EIS Claims: as Claims
+:EIS Payment transfer job: as TransferJob
+:EIS Payment response job: as ConfirmJob
+:EIS Payment clearing job: as ClearJob
+actor :Payment gateway: as PG << EXTERNAL >>
+
+
+Billing -> (Create payment)
+Commissions -> (Create payment)
+Claims -> (Create payment)
+(Create payment) .> (Create staging record) :include
+(Update status of staging records) .> (Cleanup of old staging records) :include
+
+
+TransferJob --> "1" (Read staging records)
+TransferJob --> "2" (Generate EFT and Check payment files)
+TransferJob --> "3" (Upload EFT and Check payment files)
+(Retry upload) .> (Upload EFT and Check payment files) :extend
+TransferJob --> "4" (Update status of staging records)
+TransferJob --> "5" (Generate success/failure BAM activity)
+
+note "Retries a configurable number of times with a configurable delay" as N1
+(Retry upload) .. N1
+N1 .. (Retry reading)
+
+(Read file) << EXTERNAL >>
+(Process payments) << EXTERNAL >>
+(Upload response file) << EXTERNAL >>
+
+PG --> "1" (Read file)
+PG --> "2" (Process payments)
+PG --> "3" (Upload response file)
+
+
+(Update staging records)
+(Update payment status)
+(Close claim)
+
+
+
+ConfirmJob --> "1" (Read EFT and Check response files)
+ConfirmJob --> "2" (Update staging records)
+ConfirmJob --> "3" (Update payment status)
+ConfirmJob --> "4" (Close claim)
+
+(Retry reading) .> (Read EFT and Check response files) :extend
+
+ClearJob --> "1" (Fetch staged payments to clear automatically)
+ClearJob --> "2" (Set payment status to Cleared)
+
+
+
+
+@enduml

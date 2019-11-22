@@ -1,0 +1,31 @@
+@startuml
+skinparam  participant {
+  BackgroundColor yellow
+  BorderColor brown
+}
+
+actor DXP
+
+participant EISUAutoQuoteRestServiceImpl
+participant RestPreconfigAutoQuoteFacadeAdapter
+participant RestPreconfigRetrievalQuoteProcessor
+participant PolicyDao
+participant PrecofigRestProcessorHelper
+participant MapperRegistry
+participant Mapper
+
+
+DXP ->o EISUAutoQuoteRestServiceImpl:retrieveQuote
+EISUAutoQuoteRestServiceImpl --> RestPreconfigAutoQuoteFacadeAdapter ++: getQuoteDetails
+RestPreconfigAutoQuoteFacadeAdapter --> RestPreconfigRetrievalQuoteProcessor ++: process
+RestPreconfigRetrievalQuoteProcessor --> PolicyDao ++ :findLatestVersionPolicyByNumber
+return
+loop "all mappers for policy"
+RestPreconfigRetrievalQuoteProcessor -->o MapperRegistry:getMapper
+RestPreconfigRetrievalQuoteProcessor --> Mapper ++:map
+note over Mapper #aqua: map attributes from Policy entity into REST DTO
+note over Mapper #aqua: preconfig mappers are extended to support custom attributes
+return
+return
+return
+@enduml

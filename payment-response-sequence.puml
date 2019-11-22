@@ -1,0 +1,56 @@
+@startuml
+skinparam  participant {
+  BackgroundColor yellow
+  BorderColor brown
+}
+
+actor "Job Scheduler"
+participant EISUPaymentResponseJob
+participant EISUReceiveCheckPaymentService
+participant EISUReceiveEFTPaymentService
+participant EISUPaymentResponseRouteBuilder
+participant "SFTP component"
+participant EISUPaymentResponseProcessor
+participant AsyncTaskManager #moccasin
+participant EISUPaymentResponseProcessingAdapter
+participant EISUPaymentStagingService
+participant PaymentLifecycleService  #moccasin
+
+
+"Job Scheduler" ->o EISUPaymentResponseJob : run
+EISUPaymentResponseJob -> EISUPaymentResponseJob ++: doExecute
+EISUPaymentResponseJob -> EISUReceiveCheckPaymentService ++ : receive
+      EISUReceiveCheckPaymentService -->o EISUPaymentResponseRouteBuilder:configure
+      EISUReceiveCheckPaymentService -->o "SFTP component":send
+      note over "SFTP component" #aqua : retry N times on fail with timeout M
+      EISUReceiveCheckPaymentService --> EISUPaymentResponseProcessor ++ :process
+      EISUPaymentResponseProcessor -->o AsyncTaskManager:addTaskToQueue
+      AsyncTaskManager --> EISUPaymentResponseProcessingAdapter ++:handleTask
+      EISUPaymentResponseProcessingAdapter  --> EISUPaymentStagingService ++:updateStagingRecord
+      return
+      EISUPaymentResponseProcessingAdapter  --> PaymentLifecycleService ++:executeAction
+      return
+      return
+      return
+      return
+
+
+
+ EISUPaymentResponseJob -> EISUReceiveEFTPaymentService ++ : receive
+ EISUReceiveEFTPaymentService -->o EISUPaymentResponseRouteBuilder:configure
+ EISUReceiveEFTPaymentService -->o "SFTP component":send
+ note over "SFTP component" #aqua : retry N times on fail with timeout M
+ EISUReceiveEFTPaymentService --> EISUPaymentResponseProcessor ++ :process
+ EISUPaymentResponseProcessor -->o AsyncTaskManager:addTaskToQueue
+ AsyncTaskManager --> EISUPaymentResponseProcessingAdapter ++:handleTask
+ EISUPaymentResponseProcessingAdapter  --> EISUPaymentStagingService ++:updateStagingRecord
+ return
+ EISUPaymentResponseProcessingAdapter  --> PaymentLifecycleService ++:executeAction
+ return
+ return
+ return
+ return
+
+
+
+@enduml

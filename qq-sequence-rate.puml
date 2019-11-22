@@ -1,0 +1,41 @@
+@startuml
+
+skinparam  participant {
+  BackgroundColor yellow
+  BorderColor brown
+}
+
+actor DXP
+
+participant EISUAutoQuoteRestServiceImpl
+participant RestPreconfigAutoQuoteFacadeAdapter
+participant RestPreconfigRateQuoteProcessor
+participant PolicyDao
+participant ComponentInfoHandler
+participant QuoteLifecycleService
+
+DXP ->o EISUAutoQuoteRestServiceImpl:rateQuote
+EISUAutoQuoteRestServiceImpl --> RestPreconfigAutoQuoteFacadeAdapter ++: rateQuote
+RestPreconfigAutoQuoteFacadeAdapter --> RestPreconfigRateQuoteProcessor ++: process
+RestPreconfigRateQuoteProcessor --> PolicyDao ++ :findPendingQuotesForPolicy
+return
+RestPreconfigRateQuoteProcessor --> PolicyDao ++ :findById
+return
+RestPreconfigRateQuoteProcessor --> ComponentInfoHandler++:validateBlsRulesFromConstraints
+note over ComponentInfoHandler #aqua: run rules for dataGather process
+return
+RestPreconfigRateQuoteProcessor --> RestPreconfigRateQuoteProcessor ++:runAdditionalValidations
+return
+RestPreconfigRateQuoteProcessor --> QuoteLifecycleService ++:rate
+return
+RestPreconfigRateQuoteProcessor --> QuoteLifecycleService ++:save
+return
+RestPreconfigRateQuoteProcessor --> RestPreconfigRateQuoteProcessor ++:mapResult
+return
+return
+return
+
+
+
+
+@enduml

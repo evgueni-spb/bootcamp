@@ -1,0 +1,116 @@
+@startuml
+allowmixing
+
+left to right direction
+
+
+
+skinparam package {
+  BackgroundColor<<LIB>> olive
+  BorderColor<<LIB>> olive
+}
+
+skinparam artifact {
+  BackgroundColor yellow
+  BorderColor brown
+}
+
+enum TransferStatus {
+pending
+sent
+}
+
+
+class PaymentUpdatedEvent
+
+
+
+enum ProcessingStatus {
+stopped
+cleared
+declined
+autoCleared
+}
+
+
+abstract class PaymentTransferEntity {
+Long batchNumber
+Long responseBatchNumber
+TransferStatus statusCd
+Date updated
+Boolean voided
+String paymentNumber
+int direction
+BigDecimal amount
+String currency
+String referenceNumber
+ProcessingStatus processingStatus
+String declineReason
+...
+}
+
+class CheckPaymentTransferEntity {
+String checkNumber
+Date checkDate
+String payeeName
+...
+}
+
+
+class EFTPaymentTransferEntity {
+String transitNumber
+....
+}
+
+CheckPaymentTransferEntity --|> PaymentTransferEntity
+EFTPaymentTransferEntity --|> PaymentTransferEntity
+
+class EISUPaymentUpdatedEventListener {
++onApplicationEvent(paymentUpdatedEvent)
+}
+
+EISUPaymentUpdatedEventListener o--> PaymentUpdatedEvent
+
+interface EISUPaymentStagingService
+class EISUPaymentStagingServiceImpl{
++stagePayment(paymentUpdatedEvent event)
++updateStagingRecord(paymentTransferProcessingDTO)
++fetchStagingRecords(paymentType,dateFrom, batchNumber)
++fetchPaymentsToClear()
++autoClearStagingRecord(paymentNumber)
++cleanup(dateTo)
+}
+
+note as PRA
+ invokes BASE services to pull
+ data from the billing domain needed
+ to create a staging record
+end note
+
+PRA . EISUPaymentStagingServiceImpl
+
+class PaymentTransferProcessingDTO {
+String referenceNumber
+ProcessingStatus processingStatus
+String declineReason
+....
+}
+
+PaymentTransferEntity *--> TransferStatus
+PaymentTransferEntity *--> ProcessingStatus
+PaymentTransferProcessingDTO *--> ProcessingStatus
+
+EISUPaymentStagingServiceImpl *--> PaymentTransferProcessingDTO
+EISUPaymentStagingJpaDao o--> PaymentTransferEntity
+
+EISUPaymentStagingServiceImpl ..|> EISUPaymentStagingService
+EISUPaymentUpdatedEventListener --> EISUPaymentStagingService
+
+interface EISUPaymentStagingDao
+class EISUPaymentStagingJpaDao {
++retrievePaymentForStaging(paymentUpdatedEvent)
++createUpdateStagingRecord(paymentTransferEntity)
+}
+EISUPaymentStagingJpaDao ..|> EISUPaymentStagingDao
+EISUPaymentStagingServiceImpl *--> EISUPaymentStagingDao
+@enduml

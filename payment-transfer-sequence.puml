@@ -19,8 +19,8 @@ participant EISUPaymentTransferPostProcessor
 
 
 
-"Job Scheduler" ->o EISUPaymentTransferJob ++ : run
-EISUPaymentTransferJob -> EISUPaymentTransferJob: doExecute
+"Job Scheduler" ->o EISUPaymentTransferJob : run
+EISUPaymentTransferJob -> EISUPaymentTransferJob ++: doExecute
 EISUPaymentTransferJob -> EISUPaymentTransferJob ++ : fetchCheckPayments
 EISUPaymentTransferJob -> EISUPaymentStagingServiceImpl ++ : fetchStagingRecords
 return
@@ -45,8 +45,8 @@ return
 end
 EISUPaymentTransferServiceImpl -> ProducerTemplate : sendBodyAndHeader
 ProducerTemplate -[#blue]>o EISUPaymentTransferRouteBuilder:configure
-note over EISUPaymentTransferRouteBuilder #aqua : retry N times on fail with timeout M
 ProducerTemplate -[#blue]>o "SFTP component":send
+note over "SFTP component" #aqua : retry N times on fail with timeout M
 ProducerTemplate -[#blue]>o EISUPaymentTransferPostProcessor:process
 EISUPaymentTransferPostProcessor -> EISUPaymentTransferPostProcessor:updateStagingRecords
 EISUPaymentTransferPostProcessor -> EISUPaymentTransferPostProcessor:updatePayments
