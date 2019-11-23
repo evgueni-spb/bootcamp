@@ -11,11 +11,11 @@ participant EISUAutoQuoteRestServiceImpl
 participant RestPreconfigAutoQuoteFacadeAdapter
 participant RestPreconfigCreationQuoteProcessor
 participant PrecofigRestProcessorHelper
-participant MapperRegistry
+participant MapperRegistry #moccasin
 participant Mapper
-participant PackageFacade
+participant PackageFacade #moccasin
 participant ComponentInfoHandler
-participant QuoteLifecycleService
+participant QuoteLifecycleService #moccasin
 
 
 
@@ -46,8 +46,7 @@ RestPreconfigCreationQuoteProcessor --> QuoteLifecycleService ++:save
 return
 return
 return
-EISUAutoQuoteRestServiceImpl --> EISUAutoQuoteRestServiceImpl ++:mapCreateResponse
-return
+EISUAutoQuoteRestServiceImpl --> EISUAutoQuoteRestServiceImpl :mapCreateResponse
 
 
 

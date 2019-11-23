@@ -24,7 +24,7 @@ EISUAutoQuoteRestServiceImpl --|> AbstractPreconfigRestService
 
 EISUAutoQuoteRestServiceImpl ..> RestPreconfigAutoPolicyDetailsInfo
 
-interface RestQuoteFacade{
+interface RestQuoteFacade #moccasin{
 }
 
 interface MapperRegistry{
@@ -33,7 +33,7 @@ interface MapperRegistry{
 
 note top of MapperRegistry #aqua : separate REST-to-Domain and Domain-to-REST mapper registries
 
-interface Mapper {
+interface Mapper #moccasin{
 +map(from)
 }
 
@@ -66,7 +66,7 @@ createQuote(componentName, version,productCd, quoteInfo)
 getQuoteDetails(String policyNumber)
 }
 
-RestPreconfigAutoQuoteFacadeAdapter o--> QuoteLifecycleService
+RestQuoteProcessor o--> QuoteLifecycleService
 
 
 
@@ -77,22 +77,17 @@ retriveComponentConfigurations(productCd, version)
 
 
 
-
-interface DataValidatorRegistry{
-+ validateData(issueContext, resultStatus)
-}
-
-
 RestPreconfigAutoQuoteFacadeAdapter ..|> RestQuoteFacade
 
 
-interface QuoteLifecycleService{
+interface QuoteLifecycleService #moccasin{
 +rate(quote, txInfo)
 +save(quote)
++issue(quote, txInfo)
 }
 
 
-interface PackageFacade {
+interface PackageFacade #moccasin{
 evalTable(tableName, root, instance,context)
 getAvailablePackages(root,instance,context)
 }
@@ -109,7 +104,7 @@ class RestPreconfigCreationQuoteProcessor{
 
 
 class RestPreconfigRetrievalQuoteProcessor {
-+processor(productCd,version,request,componentName)
++processor(request)
 }
 
 class RestPreconfigEndorsementQuoteProcessor{
@@ -117,12 +112,21 @@ class RestPreconfigEndorsementQuoteProcessor{
 }
 
 class RestPreconfigRateQuoteProcessor {
-+processor(productCd,version,request,componentName)
++processor(policyNumber)
 }
 
 class RestPreconfigIssueQuoteProcessor {
-+processor(productCd,version,request,componentName)
++processor(policyNumber,issueContext)
 }
+
+interface PurchaseProcessingService #moccasin{
++processPurchaseRequest()
+}
+
+class EISUPurchaseServiceCreateDepositPaymentImpl {
++createDepositPayment(account, policyTerm, downPaymentWorker, purchaseQuoteInfoDto)
+}
+
 
 RestPreconfigRetrievalQuoteProcessor ..|> RestQuoteProcessor
 RestPreconfigEndorsementQuoteProcessor ..|> RestQuoteProcessor
@@ -131,9 +135,14 @@ RestPreconfigCreationQuoteProcessor ..|> RestQuoteProcessor
 RestPreconfigRateQuoteProcessor ..|> RestQuoteProcessor
 RestPreconfigIssueQuoteProcessor ..|> RestQuoteProcessor
 
+RestPreconfigIssueQuoteProcessor o--> PurchaseProcessingService
+PurchaseProcessingService *--> EISUPurchaseServiceCreateDepositPaymentImpl
+
 class ComponentInfoHandler{
 +validateBlsRulesFromConstraints(policy, status)
 +validateBlsRulesByTag(policy, tag)
++validatePolicyLocked(policyNumber)
++retrivePolicySummary(policyNumber)
 }
 
 
@@ -150,12 +159,6 @@ RestQuoteProcessor o--> ComponentInfoHandler
 RestQuoteProcessor ..> PolicyDao
 RestQuoteProcessor ..> PolicyFacade
 
-
-
-
-interface PurchaseHandler{
-
-}
 
 
 

@@ -1,0 +1,56 @@
+@startuml
+skinparam  participant {
+  BackgroundColor yellow
+  BorderColor brown
+}
+
+actor DXP
+
+participant EISUAutoQuoteRestServiceImpl
+participant RestPreconfigAutoQuoteFacadeAdapter
+participant RestPreconfigIssueQuoteProcessor
+participant PolicyDao #moccasin
+participant ComponentInfoHandler
+participant PurchaseProcessingService #moccasin
+participant EISUPurchaseServiceCreateDepositPaymentImpl
+
+DXP ->o EISUAutoQuoteRestServiceImpl:issueQuote
+EISUAutoQuoteRestServiceImpl --> RestPreconfigAutoQuoteFacadeAdapter ++: issueQuote
+RestPreconfigAutoQuoteFacadeAdapter --> RestPreconfigIssueQuoteProcessor ++: process
+RestPreconfigIssueQuoteProcessor --> ComponentInfoHandler++:validatePolicyLocked
+return
+RestPreconfigIssueQuoteProcessor --> ComponentInfoHandler++:retrievePolicySummary
+return
+RestPreconfigIssueQuoteProcessor --> ComponentInfoHandler++:validateBlsRulesFromConstraints
+return
+RestPreconfigIssueQuoteProcessor --> RestPreconfigIssueQuoteProcessor:constructPurchaseRequestDto
+
+note over RestPreconfigIssueQuoteProcessor #aqua
+custom logic to build BASE PurchaseRequestDto
+from project specific policy issueContext
+end note
+RestPreconfigIssueQuoteProcessor --> PurchaseProcessingService++ :processPurchaseRequest
+return
+note over PurchaseProcessingService #aqua
+ finds or creates billing account,
+ creates billable policy term,
+ creates invoice,
+ makes payment,
+ issues quote
+end note
+PurchaseProcessingService --> EISUPurchaseServiceCreateDepositPaymentImpl++:createDepositPayment
+return
+note over EISUPurchaseServiceCreateDepositPaymentImpl #aqua: customized down payment processing
+
+RestPreconfigIssueQuoteProcessor --> PolicyDao++:findCurrentPolicySummaryByNumber
+return
+
+return
+return
+
+
+EISUAutoQuoteRestServiceImpl --> EISUAutoQuoteRestServiceImpl:mapIssueResponse
+
+
+
+@enduml

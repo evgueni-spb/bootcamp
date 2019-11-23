@@ -10,13 +10,15 @@ actor DXP
 participant EISUAutoQuoteRestServiceImpl
 participant RestPreconfigAutoQuoteFacadeAdapter
 participant RestPreconfigRateQuoteProcessor
-participant PolicyDao
+participant PolicyDao #moccasin
 participant ComponentInfoHandler
-participant QuoteLifecycleService
+participant QuoteLifecycleService #moccasin
 
 DXP ->o EISUAutoQuoteRestServiceImpl:rateQuote
 EISUAutoQuoteRestServiceImpl --> RestPreconfigAutoQuoteFacadeAdapter ++: rateQuote
 RestPreconfigAutoQuoteFacadeAdapter --> RestPreconfigRateQuoteProcessor ++: process
+RestPreconfigRateQuoteProcessor --> ComponentInfoHandler++:validatePolicyLocked
+return
 RestPreconfigRateQuoteProcessor --> PolicyDao ++ :findPendingQuotesForPolicy
 return
 RestPreconfigRateQuoteProcessor --> PolicyDao ++ :findById
@@ -30,10 +32,10 @@ RestPreconfigRateQuoteProcessor --> QuoteLifecycleService ++:rate
 return
 RestPreconfigRateQuoteProcessor --> QuoteLifecycleService ++:save
 return
-RestPreconfigRateQuoteProcessor --> RestPreconfigRateQuoteProcessor ++:mapResult
 return
 return
-return
+EISUAutoQuoteRestServiceImpl --> EISUAutoQuoteRestServiceImpl :mapRateResponse
+
 
 
 

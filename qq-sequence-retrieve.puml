@@ -9,9 +9,9 @@ actor DXP
 participant EISUAutoQuoteRestServiceImpl
 participant RestPreconfigAutoQuoteFacadeAdapter
 participant RestPreconfigRetrievalQuoteProcessor
-participant PolicyDao
+participant PolicyDao #moccasin
 participant PrecofigRestProcessorHelper
-participant MapperRegistry
+participant MapperRegistry #moccasin
 participant Mapper
 
 
