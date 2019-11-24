@@ -77,7 +77,21 @@ EISUPaymentResponseRouteBuilder *--> EISUPaymentResponseProcessor
 EISUPaymentResponseRouteBuilder o--> "SFTP component"
 
 
+interface ClaimsAutomaticCloseFacade  #moccasin{
++closeClaimAutomatically(claimsEntity)
+}
 
+interface PaymentLifecycleService  #moccasin{
++executeAction(action)
+}
+
+interface ProcessManagementService #moccasin{
++create(manualTaskCreateInfo)
+}
+
+EISUPaymentResponseProcessingAdapter o--> ProcessManagementService
+EISUPaymentResponseProcessingAdapter o--> ClaimsAutomaticCloseFacade
+EISUPaymentResponseProcessingAdapter o--> PaymentLifecycleService
 
 
 interface EISUPaymentResponseMapper {
@@ -118,7 +132,7 @@ class EISUPaymentResponseProcessingAdapter {
 +handleTask(taskInfo, auditor)
 }
 
-EISUPaymentResponseProcessingAdapter *--> EISUPaymentStagingService
+EISUPaymentResponseProcessor o--> EISUPaymentStagingService
 
 note as PRA
  invokes BASE services to clear

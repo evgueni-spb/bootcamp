@@ -14,9 +14,9 @@ participant EISUPaymentStagingService
 participant EISUPaymentStagingDao
 
 
-Billing -> EISUPaymentUpdatedEventListener : generate PaymentUpdatedEvent
-Commissions -> EISUPaymentUpdatedEventListener : generate PaymentUpdatedEvent
-Claims -> EISUPaymentUpdatedEventListener : generate PaymentUpdatedEvent
+Billing ->o EISUPaymentUpdatedEventListener : generate PaymentUpdatedEvent
+Commissions ->o EISUPaymentUpdatedEventListener : generate PaymentUpdatedEvent
+Claims ->o EISUPaymentUpdatedEventListener : generate PaymentUpdatedEvent
 
 EISUPaymentUpdatedEventListener -> EISUPaymentUpdatedEventListener ++ :onApplicationEvent
 opt "payment qualifies for staging"
@@ -24,6 +24,13 @@ EISUPaymentUpdatedEventListener -> EISUPaymentStagingService ++ : stagePayment
 EISUPaymentStagingService -> EISUPaymentStagingDao ++ :retrievePaymentForStaging
 return
 EISUPaymentStagingService -> EISUPaymentStagingDao ++ :createUpdateStagingRecord
+return
+return
+end
+
+opt "void payment"
+EISUPaymentUpdatedEventListener -> EISUPaymentStagingService ++ : voidPayment
+EISUPaymentStagingService -> EISUPaymentStagingDao ++ :voidPayment
 return
 return
 end

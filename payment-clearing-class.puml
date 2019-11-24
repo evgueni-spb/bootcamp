@@ -14,7 +14,7 @@ interface EISUPaymentStagingService {
 
 EISUClearingJob o-> EISUPaymentStagingService
 
-interface AsyncTaskManager <<BASE>> {
+interface AsyncTaskManager <<BASE>> #moccasin{
 +addTaskToQueue(taskInfo, date)
 }
 
@@ -24,7 +24,7 @@ class EISUPaymentClearingTaskAdapter {
 
 AsyncTaskManager ..> EISUPaymentClearingTaskAdapter
 
-interface PaymentLifecycleService <<BASE>> {
+interface PaymentLifecycleService <<BASE>> #moccasin {
 +executeAction(payment,paymentAction,null)
 }
 

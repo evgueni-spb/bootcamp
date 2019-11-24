@@ -36,7 +36,7 @@ autoCleared
 abstract class PaymentTransferEntity {
 Long batchNumber
 Long responseBatchNumber
-TransferStatus statusCd
+TransferStatus status
 Date updated
 Boolean voided
 String paymentNumber

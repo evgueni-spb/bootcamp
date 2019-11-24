@@ -10,11 +10,11 @@ participant EISUPaymentStagingServiceImpl
 participant EISUPaymentTransferServiceImpl
 participant EISUCheckPaymentTransferMapperImpl
 participant EISUEFTPaymentTransferMapperImpl
-participant StreamFactory
-participant BeanWriter
-participant ProducerTemplate
+participant StreamFactory #lightgray
+participant BeanWriter #lightgray
+participant ProducerTemplate #lightgray
 participant EISUPaymentTransferRouteBuilder
-participant "SFTP component"
+participant "SFTP component" #lightgray
 participant EISUPaymentTransferPostProcessor
 
 

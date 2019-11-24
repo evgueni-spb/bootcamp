@@ -9,47 +9,111 @@ participant EISUPaymentResponseJob
 participant EISUReceiveCheckPaymentService
 participant EISUReceiveEFTPaymentService
 participant EISUPaymentResponseRouteBuilder
-participant "SFTP component"
+participant "SFTP component" #lightgray
 participant EISUPaymentResponseProcessor
+participant EISUCheckPaymentResponseMapperImpl
+participant StreamFactory  #lightgray
+participant BeanReader  #lightgray
 participant AsyncTaskManager #moccasin
 participant EISUPaymentResponseProcessingAdapter
 participant EISUPaymentStagingService
 participant PaymentLifecycleService  #moccasin
+participant ClaimsAutomaticCloseFacade #moccasin
+participant ProcessManagementService #moccasin
 
 
 "Job Scheduler" ->o EISUPaymentResponseJob : run
 EISUPaymentResponseJob -> EISUPaymentResponseJob ++: doExecute
-EISUPaymentResponseJob -> EISUReceiveCheckPaymentService ++ : receive
+EISUPaymentResponseJob -> EISUReceiveCheckPaymentService ++ : processFile
       EISUReceiveCheckPaymentService -->o EISUPaymentResponseRouteBuilder:configure
-      EISUReceiveCheckPaymentService -->o "SFTP component":send
+      EISUReceiveCheckPaymentService -->o "SFTP component":receive
       note over "SFTP component" #aqua : retry N times on fail with timeout M
       EISUReceiveCheckPaymentService --> EISUPaymentResponseProcessor ++ :process
-      EISUPaymentResponseProcessor -->o AsyncTaskManager:addTaskToQueue
-      AsyncTaskManager --> EISUPaymentResponseProcessingAdapter ++:handleTask
-      EISUPaymentResponseProcessingAdapter  --> EISUPaymentStagingService ++:updateStagingRecord
+      EISUPaymentResponseProcessor -> EISUPaymentResponseMapperImpl ++ :map
+      note over EISUPaymentResponseMapperImpl #aqua :payment response CHECK mapping xml file
+
+      EISUPaymentResponseMapperImpl ->o StreamFactory :createReader
+      EISUPaymentResponseMapperImpl --> BeanReader ++ :read
       return
-      EISUPaymentResponseProcessingAdapter  --> PaymentLifecycleService ++:executeAction
       return
-      return
+
+      loop "all check payments"
+       EISUPaymentResponseProcessor  --> EISUPaymentStagingService ++:updateStagingRecord
+       return
+       EISUPaymentResponseProcessor -->o AsyncTaskManager:addTaskToQueue
+            AsyncTaskManager --> EISUPaymentResponseProcessingAdapter ++:handleTask
+
+
+            opt should update status
+            EISUPaymentResponseProcessingAdapter  --> PaymentLifecycleService ++:executeAction
+            return
+            end
+
+            opt "should close claim"
+            EISUPaymentResponseProcessingAdapter  --> ClaimsAutomaticCloseFacade ++:closeClaimAutomatically
+            return
+            end
+
+            opt "should create a followup task"
+             EISUPaymentResponseProcessingAdapter  --> ProcessManagementService ++:create
+             note over ProcessManagementService #aqua: followup upon automatically cleared payment
+             return
+            end
+            return
+
+
+      end
+
+
       return
       return
 
 
 
- EISUPaymentResponseJob -> EISUReceiveEFTPaymentService ++ : receive
+ EISUPaymentResponseJob -> EISUReceiveEFTPaymentService ++ : processFile
  EISUReceiveEFTPaymentService -->o EISUPaymentResponseRouteBuilder:configure
- EISUReceiveEFTPaymentService -->o "SFTP component":send
+ EISUReceiveEFTPaymentService -->o "SFTP component":receive
  note over "SFTP component" #aqua : retry N times on fail with timeout M
  EISUReceiveEFTPaymentService --> EISUPaymentResponseProcessor ++ :process
- EISUPaymentResponseProcessor -->o AsyncTaskManager:addTaskToQueue
- AsyncTaskManager --> EISUPaymentResponseProcessingAdapter ++:handleTask
- EISUPaymentResponseProcessingAdapter  --> EISUPaymentStagingService ++:updateStagingRecord
- return
- EISUPaymentResponseProcessingAdapter  --> PaymentLifecycleService ++:executeAction
- return
- return
- return
- return
+  EISUPaymentResponseProcessor -> EISUPaymentResponseMapperImpl ++ :map
+       note over EISUPaymentResponseMapperImpl #aqua :payment response CHECK mapping xml file
+
+       EISUPaymentResponseMapperImpl ->o StreamFactory :createReader
+       EISUPaymentResponseMapperImpl --> BeanReader ++ :read
+       return
+       return
+
+       loop "all EFT payments"
+        EISUPaymentResponseProcessor  --> EISUPaymentStagingService ++:updateStagingRecord
+        return
+        EISUPaymentResponseProcessor -->o AsyncTaskManager:addTaskToQueue
+             AsyncTaskManager --> EISUPaymentResponseProcessingAdapter ++:handleTask
+
+
+            opt should update status
+            EISUPaymentResponseProcessingAdapter  --> PaymentLifecycleService ++:executeAction
+            return
+            end
+
+            opt "should close claim"
+            EISUPaymentResponseProcessingAdapter  --> ClaimsAutomaticCloseFacade ++:closeClaimAutomatically
+            return
+            end
+
+            opt "should create a followup task"
+             EISUPaymentResponseProcessingAdapter  --> ProcessManagementService ++:create
+             note over ProcessManagementService #aqua: followup upon automatically cleared payment
+             return
+            end
+             return
+
+
+       end
+
+
+       return
+       return
+
 
 
 

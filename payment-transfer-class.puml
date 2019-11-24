@@ -45,21 +45,21 @@ interface EISUPaymentTransferMapper {
 }
 
 class EISUCheckPaymentTransferMapperImpl{
- +validateStagingRecord(paymentTransferEntity)
- +mapStagingRecord(paymentTransferEntity)
+ +validateRecord(paymentTransferEntity)
+ +mapRecord(paymentTransferEntity)
 }
 
 EISUCheckPaymentTransferMapperImpl ..|>  EISUPaymentTransferMapper
 class EISUEFTPaymentTransferMapperImpl{
- +validateStagingRecord(paymentTransferEntity)
- +mapStagingRecord(paymentTransferEntity)
+ +validateRecord(paymentTransferEntity)
+ +mapRecord(paymentTransferEntity)
 }
 
 EISUEFTPaymentTransferMapperImpl ..|>  EISUPaymentTransferMapper
 
 EISUPaymentTransferServiceImpl *->  EISUPaymentTransferMapper
 
-EISUPaymentTransferServiceImpl o--> ProducerTemplate
+
 
 
 package Camel <<LIB>> {
@@ -71,7 +71,7 @@ interface ProducerTemplate {
 }
 }
 
-
+EISUPaymentTransferServiceImpl o--> ProducerTemplate
 
 EISUPaymentTransferRouteBuilder ..|> RouteBuilder
 EISUPaymentTransferRouteBuilder *--> EISUPaymentTransferPostProcessor
