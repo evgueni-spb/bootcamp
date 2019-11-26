@@ -3,11 +3,12 @@
 
 Customer -> "1" (Register)
 Customer --> "2" (Create Quote)
-Customer --> "3/4" (Rate Quote)
-Customer --> "3/4" (Update Quote)
+Customer --> "3" (Retrieve Quote)
+Customer --> "4/5" (Rate Quote)
+Customer --> "4/5" (Update Quote)
 (Rate Quote) .> (Rate Quote Variations) :extend
-Customer ---> "5" (Purchase policy)
-(Purchase policy) .> (Make payment) :include
+Customer ---> "6" (Purchase Policy)
+(Purchase Policy) .> (Make Payment) :include
 
 
 @enduml
